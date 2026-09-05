@@ -1,84 +1,135 @@
-import './App.css' // import css file
-import { useEffect, useState } from 'react';
-import axios from 'axios';
+import "./App.css"; // import css file
+import { useEffect, useState } from "react";
+import "./BrewForm";
+import BrewForm from "./BrewForm";
+import "./modal.css";
+import RecipeScatterPlot from "./Scatter";
+export default function App() {
+  const [recipes, setRecipes] = useState([]);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [recipeToDelete, setRecipeToDelete] = useState(null);
+  const [activeTab, setActiveTab] = useState("new-brew");
+  const getRecipes = async () => {
+    try {
+      const response = await fetch("http://localhost:8000/recipes");
 
-function realApiCall(name) {
-  return axios.get(`http://localhost:8000/greeting/${name}`)
-}
+      const data = await response.json();
 
-function fakeApiCall() {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      resolve({
-        name: "John Doe",
-        age: 32,
-        address: "123 Main St",
-        friends: [
-          { name: "Jane Doe", age: 31, address: "123 Main St" },
-          { name: "John Smith", age: 33, address: "123 Main St" },
-          { name: "Jane Smith", age: 34, address: "123 Main St" },
-        ]})
+      setRecipes(data);
+    } catch (error) {
+      console.error("Failed to get recipes:", error);
     }
-    , 1000)
-  })
-}
+  };
 
-function greetingButton(name) {
-  const handleClick = () => {
-    realApiCall(name).then((response) => {
-      alert(`You have one greeting: ${response.data.message}`)
-    })
+const confirmDelete = async () => {
+  if (recipeToDelete === null) return;
+
+  try {
+    const response = await fetch(
+      `http://localhost:8000/recipes/${recipeToDelete}`,
+      {
+        method: "DELETE",
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Failed to delete recipe");
+    }
+
+    // Remove it from React state
+    setRecipes((prev) =>
+      prev.filter((recipe) => recipe.id !== recipeToDelete)
+    );
+
+    // Close modal
+    setShowDeleteModal(false);
+    setRecipeToDelete(null);
+  } catch (error) {
+    console.error(error);
   }
-
-  return (
-    <button style={{ margin: "10px" }}
-     onClick={handleClick}>Greet {name}</button>
-  )
-}
-
-
-
-const Person = ({ name, age, address }) => {
-  return (
-    <div style={{ border: "1px solid black", margin: "10px", padding: "10px" }}>
-      <h4>{name}</h4>
-      <h5>{age}</h5>
-      <h6>{address}</h6>
-    </div>
-  )
-}
-
-function App () {
-
-  const [name, setName] = useState("")
-  const [age, setAge] = useState("")
-  const [address, setAddress] = useState("")
-  const [friends, setFriends] = useState([])
+};
 
   useEffect(() => {
-    fakeApiCall().then((data) => {
-      setName(data.name)
-      setAge(data.age)
-      setAddress(data.address)
-      setFriends(data.friends)
-    })
-  }
-  , [])
-
+    getRecipes();
+  }, []);
 
   return (
     <div className="app">
-      <header className="app-header">
-        <h1>My Friends</h1>
-        <Person name={name} age={age} address={address} />
-        {greetingButton(name)}
-        <h2>Friends</h2>
-        {friends.map((friend, i) => {
-          return <Person key={i} name={friend.name} age={friend.age} address={friend.address} />
-        })}
-      </header>
-    </div>
-  )
-}
+      <div className="tabs" style={{display:"flex", flexDirection: "row", justifyContent:"center"}}>
+        <button className="button-83" role="button" onClick={() => {setActiveTab("new-brew")}}>
+          New Brew
+        </button>
 
-export default App
+        <button className="button-83" role="button" onClick={() => {setActiveTab("history"); getRecipes();}}>
+          History
+        </button>
+
+        <button className="button-83" role="button" onClick={() => {setActiveTab("analytics"); getRecipes();}}>
+          Analytics
+        </button>
+      </div>
+      
+      <header className="app-header" style={{backgroundColor: "#FAF6F0"}}>
+        {activeTab === "new-brew" && <BrewForm getRecipes={getRecipes}/>}
+      {activeTab === "history" && (<div style={{width: "100%", overflowX: "auto"}}><table>
+            <thead>
+              <tr>
+                <th>Date and Time</th>
+                <th>Bean</th>
+                <th>Dose</th>
+                <th>Yield</th>
+                <th>Time</th>
+                <th>Temperature</th>
+                <th>Grind</th>
+                <th>Rating</th>
+                <th>Delete Entry</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {recipes.map((recipe) => (
+                <tr key={recipe.id}>
+                  <td>{recipe.datetime}</td>
+                  <td>{recipe.bean}</td>
+                  <td>{recipe.dose_grams}g</td>
+                  <td>{recipe.yield_grams}g</td>
+                  <td>{recipe.time_seconds}s</td>
+                  <td>{recipe.temp_setting}°C</td>
+                  <td>{recipe.grind_setting}</td>
+                  <td>{recipe.rating}</td>
+                  <td onClick={() => {setRecipeToDelete(recipe.id); setShowDeleteModal(true)}}>X</td>
+                </tr>
+              ))}
+            </tbody>
+          </table></div>)}
+      {activeTab === "analytics" && <RecipeScatterPlot recipes={recipes}/>}
+
+      </header>
+      {showDeleteModal && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h2>Delete Recipe?</h2>
+
+            <p>
+              Are you sure you want to delete this recipe? This action cannot be
+              undone.
+            </p>
+
+            <div className="modal-buttons">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setRecipeToDelete(null);
+                }}
+              >
+                Cancel
+              </button>
+
+              <button onClick={confirmDelete}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
