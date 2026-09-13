@@ -55,22 +55,42 @@ const confirmDelete = async () => {
 
   return (
     <div className="app">
-      <div className="tabs" style={{display:"flex", flexDirection: "row", justifyContent:"center"}}>
-        <button className="button-83" role="button" onClick={() => {setActiveTab("new-brew")}}>
+      <div className="tabs">
+        <button
+          className={`button-83 ${activeTab === "new-brew" ? "active" : ""}`}
+          role="button"
+          onClick={() => {
+            setActiveTab("new-brew");
+          }}
+        >
           New Brew
         </button>
 
-        <button className="button-83" role="button" onClick={() => {setActiveTab("history"); getRecipes();}}>
+        <button
+          className={`button-83 ${activeTab === "history" ? "active" : ""}`}
+          role="button"
+          onClick={() => {
+            setActiveTab("history");
+            getRecipes();
+          }}
+        >
           History
         </button>
 
-        <button className="button-83" role="button" onClick={() => {setActiveTab("analytics"); getRecipes();}}>
+        <button
+          className={`button-83 ${activeTab === "analytics" ? "active" : ""}`}
+          role="button"
+          onClick={() => {
+            setActiveTab("analytics");
+            getRecipes();
+          }}
+        >
           Analytics
         </button>
       </div>
       
       <header className="app-header" style={{backgroundColor: "#FAF6F0"}}>
-        {activeTab === "new-brew" && <BrewForm getRecipes={getRecipes}/>}
+      {activeTab === "new-brew" && <BrewForm getRecipes={getRecipes}/>}
       {activeTab === "history" && (<div style={{width: "100%", overflowX: "auto"}}><table>
             <thead>
               <tr>
